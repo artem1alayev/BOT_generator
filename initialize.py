@@ -15,7 +15,8 @@ def initialize_venv():
         if sys.platform == "win32":
             os.execv(str(VENV_DIR / "Scripts" / "python.exe"), [str(VENV_DIR / "Scripts" / "python.exe")] + sys.argv)
         else:
-            os.execv(str(VENV_DIR / "bin" / "python"), [str(VENV_DIR / "bin" / "python")] + sys.argv)
+            python_bin = VENV_DIR / "bin" / "python"
+            os.execv(str(python_bin), [str(python_bin)] + sys.argv)
 
 
 initialize_venv()
