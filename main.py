@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     ApplicationBuilder,
@@ -10,6 +11,8 @@ from telegram.ext import (
 )
 
 ASKING = 0
+
+
 
 # 1. Update the master list with your specific area question
 QUESTIONS = [
@@ -23,6 +26,7 @@ GRILIATO_CELLS = [
     "Griliato 100x100",
     "Griliato 150x150",
     "Griliato 200x200",]
+
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -39,8 +43,15 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     if len(answers) < len(QUESTIONS):
         next_question = QUESTIONS[len(answers)]
         await update.message.reply_text(next_question)
-        return ASKING  
-    
+        if len(answers) == 1:
+            button_layout = [[cell] for cell in GRILIATO_CELLS]
+            markup = ReplyKeyboardMarkup(button_layout, one_time_keyboard = True, resize_keyboard = True)
+            await update.message.reply_text(QUESTIONS[1], reply_markup = markup)
+        return ASKING
+
+
+
+
     # All answers collected! Time for the calculations
     try:
         numbers = [float(x) for x in answers]
@@ -76,7 +87,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 def main():
-    TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"
+    TOKEN = "8775044535:AAEO5u8tnFn1HdtAKgIYvDqXdOLb80QV6IM"
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
