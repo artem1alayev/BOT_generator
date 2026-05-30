@@ -52,15 +52,14 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
 
 
-
     # All answers collected! Time for the calculations
     try:
         numbers = [float(x) for x in answers]
         
         # 2. Extract your specific variables by their position in the list
-        area_cm2 = numbers[0]
-        griliato_cell = answers[1]
-        
+        area_cm2 = float(numbers[0])
+        griliato_cell = int(answers[1].split('x')[-1])
+        print(area_cm2, griliato_cell)
         # --- DO YOUR ACTUAL CALCULATIONS HERE ---
         # Example: Let's say you multiply the area by the second number
         result = area_cm2 * griliato_cell
