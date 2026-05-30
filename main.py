@@ -1,5 +1,5 @@
 import os
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -14,8 +14,16 @@ ASKING = 0
 # 1. Update the master list with your specific area question
 QUESTIONS = [
     "Please enter the total area (in cm²):",
-    "What is the second number you want to use in the calculation?"
+    "What griliato cell size do you want to use?"
 ]
+
+GRILIATO_CELLS = [
+    "Griliato 25x25",
+    "Griliato 50x50",
+    "Griliato 100x100",
+    "Griliato 150x150",
+    "Griliato 200x200",]
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['answers'] = []
@@ -39,16 +47,16 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         
         # 2. Extract your specific variables by their position in the list
         area_cm2 = numbers[0]
-        second_num = numbers[1]
+        griliato_cell = answers[1]
         
         # --- DO YOUR ACTUAL CALCULATIONS HERE ---
         # Example: Let's say you multiply the area by the second number
-        result = area_cm2 * second_num
+        result = area_cm2 * griliato_cell
         
         response_text = (
             f"📊 **Calculation Results:**\n\n"
             f"• Provided Area: {area_cm2} cm²\n"
-            f"• Second Input: {second_num}\n"
+            f"• Griliato Cell: {griliato_cell}\n"
             f"• Final Result: {result}"
         )
         
