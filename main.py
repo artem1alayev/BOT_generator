@@ -11,6 +11,7 @@ from telegram.ext import (
 )
 
 ASKING = 0
+load_dotenv()
 
 
 
@@ -87,7 +88,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 def main():
-    TOKEN = "8775044535:AAEO5u8tnFn1HdtAKgIYvDqXdOLb80QV6IM"
+    TOKEN = os.getenv("MY_API_KEY")
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
