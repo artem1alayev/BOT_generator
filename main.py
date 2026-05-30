@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -10,6 +11,8 @@ from telegram.ext import (
 )
 
 QUESTION_ONE, QUESTION_TWO = range(2)
+load_dotenv()
+
 
 # This starts the conversation when a user types /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -50,8 +53,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 def main():
     # Grab your token (or paste it straight as a string here for testing)
-    TOKEN = "8775044535:AAEO5u8tnFn1HdtAKgIYvDqXdOLb80QV6IM"
-    
+    TOKEN = os.getenv("MY_API_KEY")
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
