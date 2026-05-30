@@ -9,63 +9,79 @@ from telegram.ext import (
     filters,
 )
 
-QUESTION_ONE, QUESTION_TWO = range(2)
+ASKING = 0
 
-# This starts the conversation when a user types /start
+# 1. Update the master list with your specific area question
+QUESTIONS = [
+    "Please enter the total area (in cm²):",
+    "What is the second number you want to use in the calculation?"
+]
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Hello! Let's do some math. What is the first number?")
-    return QUESTION_ONE
+    context.user_data['answers'] = []
+    await update.message.reply_text("Hello! Let's collect your data. " + QUESTIONS[0])
+    return ASKING
 
-# This catches the first number
-async def get_first_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['num1'] = update.message.text
-    await update.message.reply_text("Got it. Now, what is the second number?")
-    return QUESTION_TWO
+async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    answers = context.user_data.get('answers', [])
+    answers.append(update.message.text)
+    context.user_data['answers'] = answers
 
-# This catches the second number and does the calculation
-async def get_second_and_calculate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    num2 = update.message.text
-    num1 = context.user_data['num1']
+    # Check if there are more questions left
+    if len(answers) < len(QUESTIONS):
+        next_question = QUESTIONS[len(answers)]
+        await update.message.reply_text(next_question)
+        return ASKING  
     
+    # All answers collected! Time for the calculations
     try:
-        n1 = float(num1)
-        n2 = float(num2)
+        numbers = [float(x) for x in answers]
         
-        # --- DO YOUR CALCULATIONS HERE ---
-        result = n1 + n2  # Example calculation
+        # 2. Extract your specific variables by their position in the list
+        area_cm2 = numbers[0]
+        second_num = numbers[1]
         
-        await update.message.reply_text(f"Calculation complete!\n\n{n1} + {n2} = {result}")
+        # --- DO YOUR ACTUAL CALCULATIONS HERE ---
+        # Example: Let's say you multiply the area by the second number
+        result = area_cm2 * second_num
+        
+        response_text = (
+            f"📊 **Calculation Results:**\n\n"
+            f"• Provided Area: {area_cm2} cm²\n"
+            f"• Second Input: {second_num}\n"
+            f"• Final Result: {result}"
+        )
+        
+        await update.message.reply_text(response_text, parse_mode="Markdown")
         
     except ValueError:
-        await update.message.reply_text("Oops! One of those wasn't a valid number. Let's stop here.")
+        await update.message.reply_text("Oops! One of your inputs wasn't a valid number. Resetting.")
     
     context.user_data.clear()
     return ConversationHandler.END
 
-# A safety exit if the user types /cancel
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("Conversation canceled.")
     context.user_data.clear()
     return ConversationHandler.END
 
+
 def main():
-    # Grab your token (or paste it straight as a string here for testing)
-    TOKEN = "8775044535:AAEO5u8tnFn1HdtAKgIYvDqXdOLb80QV6IM"
-    
+    TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE"
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            QUESTION_ONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_first_number)],
-            QUESTION_TWO: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_second_and_calculate)],
+            ASKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
     app.add_handler(conv_handler)
     
-    print("Bot is successfully running...")
+    print("Bot is successfully running with area input...")
     app.run_polling()
 
 if __name__ == "__main__":
