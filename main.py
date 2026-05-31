@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -10,64 +10,89 @@ from telegram.ext import (
     filters,
 )
 
-QUESTION_ONE, QUESTION_TWO = range(2)
+ASKING = 0
 load_dotenv()
 
 
-# This starts the conversation when a user types /start
+
+# 1. Update the master list with your specific area question
+QUESTIONS = [
+    "Please enter the total area (in m²):",
+    "What griliato cell size do you want to use?"
+]
+
+GRILIATO_CELLS = [
+    "Griliato 25x25",
+    "Griliato 50x50",
+    "Griliato 100x100",
+    "Griliato 150x150",
+    "Griliato 200x200",]
+
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Hello! Let's do some math. What is the first number?")
-    return QUESTION_ONE
+    context.user_data['answers'] = []
+    await update.message.reply_text("Hello! Let's collect your data. " + QUESTIONS[0])
+    return ASKING
 
-# This catches the first number
-async def get_first_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data['num1'] = update.message.text
-    await update.message.reply_text("Got it. Now, what is the second number?")
-    return QUESTION_TWO
+async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    answers = context.user_data.get('answers', [])
+    answers.append(update.message.text)
+    context.user_data['answers'] = answers
 
-# This catches the second number and does the calculation
-async def get_second_and_calculate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    num2 = update.message.text
-    num1 = context.user_data['num1']
-    
+    if len(answers) < len(QUESTIONS):
+        next_question = QUESTIONS[len(answers)]
+        if len(answers) == 1:
+            button_layout = [[cell] for cell in GRILIATO_CELLS]
+            markup = ReplyKeyboardMarkup(button_layout, one_time_keyboard = True, resize_keyboard = True)
+            await update.message.reply_text(QUESTIONS[1], reply_markup = markup)
+        else:
+            await update.message.reply_text(next_question)
+        return ASKING
+
+
+
     try:
-        n1 = float(num1)
-        n2 = float(num2)
+        area_m2 = float(answers[0])
+        griliato_cell = int(answers[1].split('x')[-1])
+       
+        result = area_m2 * griliato_cell
         
-        # --- DO YOUR CALCULATIONS HERE ---
-        result = n1 + n2  # Example calculation
+        response_text = (
+            f"📊 **Calculation Results:**\n\n"
+            f"• Provided Area: {area_m2} m²\n"
+            f"• Griliato Cell: {griliato_cell}\n"
+            f"• Final Result: {result}"
+        )
         
-        await update.message.reply_text(f"Calculation complete!\n\n{n1} + {n2} = {result}")
+        await update.message.reply_text(response_text, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove())
         
-    except ValueError:
-        await update.message.reply_text("Oops! One of those wasn't a valid number. Let's stop here.")
+
+    except ValueError as e:
+        await update.message.reply_text("Oops! One of your inputs wasn't a valid number. Resetting.")
+        print(f"Error occurred: {e}")
+        import traceback
+        traceback.print_exc()
     
     context.user_data.clear()
     return ConversationHandler.END
 
-# A safety exit if the user types /cancel
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Conversation canceled.")
-    context.user_data.clear()
-    return ConversationHandler.END
 
 def main():
-    # Grab your token (or paste it straight as a string here for testing)
     TOKEN = os.getenv("MY_API_KEY")
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            QUESTION_ONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_first_number)],
-            QUESTION_TWO: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_second_and_calculate)],
+            ASKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[CommandHandler("start", start)],
     )
 
     app.add_handler(conv_handler)
     
-    print("Bot is successfully running...")
+    print("Bot is successfully running with area input...")
     app.run_polling()
 
 if __name__ == "__main__":
