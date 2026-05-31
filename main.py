@@ -17,7 +17,7 @@ load_dotenv()
 
 # 1. Update the master list with your specific area question
 QUESTIONS = [
-    "Please enter the total area (in cm²):",
+    "Please enter the total area (in m²):",
     "What griliato cell size do you want to use?"
 ]
 
@@ -40,48 +40,40 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     answers.append(update.message.text)
     context.user_data['answers'] = answers
 
-    # Check if there are more questions left
     if len(answers) < len(QUESTIONS):
         next_question = QUESTIONS[len(answers)]
-        await update.message.reply_text(next_question)
         if len(answers) == 1:
             button_layout = [[cell] for cell in GRILIATO_CELLS]
             markup = ReplyKeyboardMarkup(button_layout, one_time_keyboard = True, resize_keyboard = True)
             await update.message.reply_text(QUESTIONS[1], reply_markup = markup)
+        else:
+            await update.message.reply_text(next_question)
         return ASKING
 
 
 
-    # All answers collected! Time for the calculations
     try:
-        numbers = [float(x) for x in answers]
-        
-        # 2. Extract your specific variables by their position in the list
-        area_cm2 = float(numbers[0])
+        area_m2 = float(answers[0])
         griliato_cell = int(answers[1].split('x')[-1])
-        print(area_cm2, griliato_cell)
-        # --- DO YOUR ACTUAL CALCULATIONS HERE ---
-        # Example: Let's say you multiply the area by the second number
-        result = area_cm2 * griliato_cell
+       
+        result = area_m2 * griliato_cell
         
         response_text = (
             f"📊 **Calculation Results:**\n\n"
-            f"• Provided Area: {area_cm2} cm²\n"
+            f"• Provided Area: {area_m2} m²\n"
             f"• Griliato Cell: {griliato_cell}\n"
             f"• Final Result: {result}"
         )
         
-        await update.message.reply_text(response_text, parse_mode="Markdown")
+        await update.message.reply_text(response_text, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove())
         
-    except ValueError:
+
+    except ValueError as e:
         await update.message.reply_text("Oops! One of your inputs wasn't a valid number. Resetting.")
+        print(f"Error occurred: {e}")
+        import traceback
+        traceback.print_exc()
     
-    context.user_data.clear()
-    return ConversationHandler.END
-
-
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Conversation canceled.")
     context.user_data.clear()
     return ConversationHandler.END
 
@@ -95,7 +87,7 @@ def main():
         states={
             ASKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[CommandHandler("start", start)],
     )
 
     app.add_handler(conv_handler)
