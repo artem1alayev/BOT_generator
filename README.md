@@ -9,7 +9,7 @@ Run the bot:
    ```bash
    python init.py
    ```
-
+The bot is fully automated and can be run just by running init.py.
 ## Notes
 
 - `main.py` contains a minimal bot skeleton.
